@@ -79,11 +79,35 @@ class App extends React.Component {
     this.setState({ newMessage: "" });
   }
   render() {
+    const { messages } = this.state;
     return (
       <div className="App">
         <div className="chat-container">
-          <pre>{JSON.stringify(this.state, null, 2)}</pre>
-          Type something...messages will show up here :)
+          {messages.length ? (
+            messages.map((message, idx) => {
+              switch (message.type) {
+                case "notification":
+                  return (
+                    <div key={idx} className="notification-message">
+                      {message.body}
+                    </div>
+                  );
+                case "message":
+                  return (
+                    <div key={idx} className="user-message">
+                      <span className="user-message-author">
+                        @{message.name}:{' '}
+                      </span>
+                      {message.body}
+                    </div>
+                  );
+                default:
+                  return null;
+              }
+            })
+          ) : (
+            <div>Joining...</div>
+          )}
         </div>
         <div className="chat-actions">
           <h3 className="chat-name">{this.state.name}</h3>
@@ -92,6 +116,7 @@ class App extends React.Component {
               this._msgInput = x;
             }}
             type="text"
+            placeholder="Type a message"
             value={this.state.newMessage}
             onChange={e => {
               this.setState({ newMessage: e.target.value });
