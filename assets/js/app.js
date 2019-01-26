@@ -30,21 +30,59 @@ function makeNickname() {
 class App extends React.Component {
   state = {
     name: makeNickname(),
-    message: ""
+    messages: [],
+    newMessage: ""
   };
   componentDidMount() {
     this._msgInput && this._msgInput.focus();
-    // const user = "Stopa";
-    // const socket = new Socket("/socket", { params: { user } });
-    // socket.connect();
+    const socket = new Socket("/socket", {
+      logger: (kind, msg, data) => {
+        console.log(`${kind}: ${msg}`, data);
+      }
+    });
+    socket.onOpen(ev => console.log("OPEN", ev));
+    socket.onError(ev => console.log("ERROR", ev));
+    socket.onClose(ev => console.log("CLOSE", ev));
+    socket.connect();
+
+    const nickname = this.state.name;
+    const lobby = socket.channel("room:lobby", { name: nickname });
+    lobby.join();
+    lobby.on("user:entered", ({ name }) => {
+      const messages = [
+        ...this.state.messages,
+        {
+          type: "notification",
+          body: `${name} joined the lobby!`
+        }
+      ];
+      this.setState({ messages });
+    });
+    lobby.on("new:msg", ({ name, body }) => {
+      const messages = [
+        ...this.state.messages,
+        {
+          type: "message",
+          name,
+          body
+        }
+      ];
+      this.setState({ messages });
+    });
+    this._sendToLobby = body => {
+      lobby.push("new:msg", { name: nickname, body });
+    };
   }
   _sendMessage() {
-    alert('send!' + this.state.message);
+    const newMessage = this.state.newMessage.trim();
+    this._sendToLobby && newMessage && this._sendToLobby(newMessage);
+    this.setState({ newMessage: "" });
   }
   render() {
     return (
       <div className="App">
         <div className="chat-container">
+          <pre>{JSON.stringify(this.state, null, 2)}</pre>
           Type something...messages will show up here :)
         </div>
         <div className="chat-actions">
@@ -54,12 +92,11 @@ class App extends React.Component {
               this._msgInput = x;
             }}
             type="text"
-            value={this.state.message}
+            value={this.state.newMessage}
             onChange={e => {
-              this.setState({ message: e.target.value });
+              this.setState({ newMessage: e.target.value });
             }}
             onKeyDown={e => {
-              debugger
               switch (e.key) {
                 case "Enter":
                   this._sendMessage();
