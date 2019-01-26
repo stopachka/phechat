@@ -3,8 +3,8 @@ defmodule ChatWeb.UserSocket do
 
   channel "room:*", ChatWeb.RoomChannel
 
-  def connect(%{"user" => user}, socket, _connect_info) do
-    {:ok, assign(socket, :user, user)}
+  def connect(_params, socket, _connect_info) do
+    {:ok, socket}
   end
 
   # Socket id's are topics that allow you to identify all sockets for a given user:
